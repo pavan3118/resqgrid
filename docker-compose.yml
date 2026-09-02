@@ -1,36 +1,38 @@
-version: '3.9'
-
 services:
-  backend:
-    build:
-      context: ./backend
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    depends_on:
-      - db
 
-  frontend:
-    build:
-      context: ./frontend
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-    depends_on:
-      - backend
-
-  db:
-    image: postgres:16-alpine
+  postgres:
+    image: postgis/postgis:18-3.6
+    container_name: resqgrid-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: resqgrid
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: resqgrid
+      POSTGRES_PASSWORD: resqgrid_dev_password
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resqgrid -d resqgrid"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    container_name: resqgrid-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:
+  redis_data:

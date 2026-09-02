@@ -1,24 +1,53 @@
 # ResQGrid
 
-A full-stack application scaffold for a resilient queue and grid management platform.
+ResQGrid is an emergency incident dispatch platform. Phase 1 provides the
+PostgreSQL/PostGIS schema, async FastAPI service, and nearest-responder
+assignment flow.
 
-## Project structure
+## Phase 1 architecture
 
-- `backend/` - API server and business logic
-- `frontend/` - UI application
-- `infrastructure/` - deployment and infrastructure code
-- `docs/` - project documentation
-- `tests/` - integration and end-to-end tests
+- `docker-compose.yml` runs PostgreSQL with PostGIS and Redis.
+- `backend/app/db/` contains the async SQLAlchemy engine and four core models:
+   `responders`, `responder_locations`, `incidents`, and `incident_assignments`.
+- `backend/app/services/dispatch_service.py` finds the nearest available
+   responder within 5 km and commits the assignment transaction.
+- `backend/app/api/dispatch.py` exposes `POST /dispatch/{incident_id}`.
+- `backend/app/main.py` exposes `/health`, `/health/db`, and registers the
+   dispatch router.
 
-## Getting started
+The React frontend remains scaffolded for a later phase.
 
-1. Copy `.env.example` to `.env` and update configuration values.
-2. Start services with Docker Compose:
-   ```bash
-   docker-compose up --build
-   ```
-3. Run backend and frontend separately as needed during development.
+## Local development
 
-## Notes
+Copy `.env.example` to `.env` if configuration overrides are needed, then start
+the infrastructure:
 
-This repository is intentionally scaffolded and ready for the next implementation step.
+```bash
+docker compose up -d
+```
+
+From `backend/`, run the API with the repository virtual environment:
+
+```powershell
+$env:PYTHONPATH = "."
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```
+
+Open Swagger at `http://127.0.0.1:8000/docs` and use `POST /dispatch/{incident_id}`.
+If port 8000 is occupied, choose another port such as `8001`.
+
+## Health checks
+
+```text
+GET /health
+GET /health/db
+```
+
+The database health endpoint confirms the async connection and reports the
+installed PostGIS version.
+
+## Dependencies
+
+Backend dependencies are pinned in [`backend/requirements.txt`](backend/requirements.txt).
+The Phase 1 stack includes FastAPI, Uvicorn, SQLAlchemy async, asyncpg, and
+GeoAlchemy2.
