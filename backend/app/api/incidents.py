@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import desc, select, update
+from sqlalchemy import desc, select, text, update
 
 from app.db.database import AsyncSessionLocal
 from app.db.models import (
@@ -17,6 +17,35 @@ router = APIRouter(
     prefix="/incidents",
     tags=["Incidents"],
 )
+
+
+@router.get("")
+async def get_incidents():
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            text(
+                """
+                SELECT
+                    id,
+                    title,
+                    description,
+                    priority,
+                    status,
+                    latitude,
+                    longitude,
+                    created_at,
+                    updated_at
+                FROM incidents
+                ORDER BY created_at DESC
+                """
+            )
+        )
+
+        incidents = result.mappings().all()
+
+    return {
+        "incidents": [dict(incident) for incident in incidents]
+    }
 
 
 @router.get("/{incident_id}", response_model=IncidentResponse)
