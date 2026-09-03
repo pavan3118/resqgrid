@@ -6,6 +6,7 @@ from sqlalchemy import text
 
 from app.api.dispatch import router as dispatch_router
 from app.api.incidents import router as incidents_router
+from app.api.responders import router as responders_router
 from app.core.config import settings
 from app.db.database import AsyncSessionLocal, init_db
 
@@ -34,6 +35,7 @@ app.add_middleware(
 
 app.include_router(dispatch_router)
 app.include_router(incidents_router)
+app.include_router(responders_router)
 
 
 @app.get("/health")

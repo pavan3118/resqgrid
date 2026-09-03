@@ -9,7 +9,9 @@ import { LatLngBounds } from "leaflet";
 
 import "leaflet/dist/leaflet.css";
 import { getIncidents } from "../services/incidentService";
+import { getResponders } from "../services/responderService";
 import type { Incident } from "../types/incident";
+import type { Responder } from "../types/responder";
 
 const DEFAULT_CENTER: [number, number] = [18.5204, 73.8567];
 
@@ -30,23 +32,28 @@ function getPriorityLabel(priority: Incident["priority"]) {
 
 function MapView() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [responders, setResponders] = useState<Responder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadIncidents() {
+    async function loadMapData() {
       try {
-        const data = await getIncidents();
-        setIncidents(data);
+        const [incidentData, responderData] = await Promise.all([
+          getIncidents(),
+          getResponders(),
+        ]);
+        setIncidents(incidentData);
+        setResponders(responderData);
       } catch (err) {
         console.error(err);
-        setError("Unable to load incidents");
+        setError("Unable to load map data.");
       } finally {
         setLoading(false);
       }
     }
 
-    loadIncidents();
+    loadMapData();
   }, []);
 
   const bounds =
@@ -87,6 +94,29 @@ function MapView() {
           </Popup>
         </Marker>
       ))}
+      {responders.map((responder) => {
+        if (responder.latitude === null || responder.longitude === null) {
+          return null;
+        }
+
+        return (
+          <Marker
+            key={`responder-${responder.id}`}
+            position={[responder.latitude, responder.longitude]}
+          >
+            <Popup>
+              <strong>{responder.name}</strong>
+              <br />
+              Type: {responder.responder_type}
+              <br />
+              Status: {" "}
+              <strong>{responder.status}</strong>
+              <br />
+              ID: {responder.id}
+            </Popup>
+          </Marker>
+        );
+      })}
       {loading && <div className="map-message">Loading incidents...</div>}
       {error && <div className="map-message">{error}</div>}
     </MapContainer>
